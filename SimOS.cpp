@@ -348,8 +348,14 @@ std::deque<FileReadRequest> SimOS::GetDiskQueue(int diskNumber) {
         throw std::out_of_range("Invalid disk number.");
     }
 
-    // Return the I/O queue of the specified disk
-    return disks[diskNumber].ioQueue;
+    // Get a reference to the I/O queue of the specified disk
+    const std::deque<FileReadRequest>& ioQueue = disks[diskNumber].ioQueue;
+
+    // Create a new deque to store the elements after index 0(removing index 0 being the current running File Read Request)
+    std::deque<FileReadRequest> newQueue(ioQueue.begin() + 1, ioQueue.end());
+
+    // Return the new deque
+    return newQueue;
 }
 
 std::vector<Process> SimOS::GetAllProcesses() {

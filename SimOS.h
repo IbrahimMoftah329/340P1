@@ -47,7 +47,7 @@ struct Process {
 
 // Structure representing a disk
 struct Disk {
-    int PID; // Disk ID
+    // Front element in the I/O Queue is the current running File Read Request
     std::deque<FileReadRequest> ioQueue; // Queue of I/O requests
 };
 
