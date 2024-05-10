@@ -85,6 +85,7 @@ private:
 
     // Member variables
     const int numberOfDisks_; // Number of disks in the system
+    const int amountOfRAM_; // Amount of RAM in the system
     const unsigned int pageSize_; // Page size of memory
     std::deque<Process> readyQueue_; // Queue for processes ready to execute
     std::vector<Process> processes_; // Vector to store all processes in the system

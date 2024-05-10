@@ -7,7 +7,7 @@ Ibrahim Moftah
 #include "SimOS.h"
 
 SimOS::SimOS(int numberOfDisks, unsigned long long amountOfRAM, unsigned int pageSize)
-    : numberOfDisks_(numberOfDisks), pageSize_(pageSize),
+    : numberOfDisks_(numberOfDisks), amountOfRAM_(amountOfRAM), pageSize_(pageSize),
       nextPID_(1), runningPID_(NO_PROCESS) {
     // Initialize memory, memoryMap, and disks vectors
     memoryMap_.resize(amountOfRAM / pageSize, false);
@@ -255,6 +255,12 @@ void SimOS::AccessMemoryAddress(unsigned long long address) {
     // Calculate the page number based on the address and page size
     unsigned long long pageNumber = address / pageSize_;
 
+    // If pageNumber is above the possible pages in the system
+    if (pageNumber >= amountOfRAM_ / pageSize_)
+    {
+        return;
+    }
+    
     // Page already in RAM, update "recently used" information
     for (auto& item : memory_) {
         if (item.pageNumber == pageNumber && item.PID == runningPID_) {
