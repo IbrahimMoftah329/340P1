@@ -464,30 +464,30 @@ bool SimOS::IsRunning() {
     return runningPID_ != NO_PROCESS;
 }
 
-std::vector<Process> SimOS::GetAllProcesses() {
-    // Return the processes vector containing all the processes
-    return processes_;
-}
+// std::vector<Process> SimOS::GetAllProcesses() {
+//     // Return the processes vector containing all the processes
+//     return processes_;
+// }
 
-void SimOS::printProcess(const Process& process) {
-    // Print the PID, Parent PID, and Status of the given process
-    std::cout << "PID: " << process.PID << ", Parent PID: " << process.parentPID << ", Status: " << getStatus(process) << std::endl;
-}
+// void SimOS::printProcess(const Process& process) {
+//     // Print the PID, Parent PID, and Status of the given process
+//     std::cout << "PID: " << process.PID << ", Parent PID: " << process.parentPID << ", Status: " << getStatus(process) << std::endl;
+// }
 
-std::string SimOS::getStatus(Process process) {
-    // Check the status of the given process and return a string representation of the status
-    if (process.status == Status::running) {
-        return "running";
-    } else if (process.status == Status::ready) {
-        return "ready";
-    } else if (process.status == Status::waiting) {
-        return "waiting";
-    } else if (process.status == Status::zombie) {
-        return "zombie";
-    } else if (process.status == Status::terminated) {
-        return "terminated";
-    } else {
-        // If the status is unexpected, return "Unknown"
-        return "Unknown";
-    }
-}
+// std::string SimOS::getStatus(Process process) {
+//     // Check the status of the given process and return a string representation of the status
+//     if (process.status == Status::running) {
+//         return "running";
+//     } else if (process.status == Status::ready) {
+//         return "ready";
+//     } else if (process.status == Status::waiting) {
+//         return "waiting";
+//     } else if (process.status == Status::zombie) {
+//         return "zombie";
+//     } else if (process.status == Status::terminated) {
+//         return "terminated";
+//     } else {
+//         // If the status is unexpected, return "Unknown"
+//         return "Unknown";
+//     }
+// }
