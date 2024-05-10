@@ -25,7 +25,7 @@ struct MemoryItem
 {
     unsigned long long pageNumber; // Page number
     unsigned long long frameNumber; // Frame number
-    int PID; // Process ID
+    int PID; // PID of the process using this frame of memory
 };
 
 // Enum representing the status of a process
@@ -78,8 +78,8 @@ public:
     std::deque<FileReadRequest> GetDiskQueue(int diskNumber); // Returns the I/O-queue of the specified disk
 
     // Helper functions
-    std::vector<Process> GetAllProcesses(); // Returns Process vector of all processes
-    void printProcess(const Process& process); // Prints process PID, Parent PID, and Status
+    // std::vector<Process> GetAllProcesses(); // Returns Process vector of all processes
+    // void printProcess(const Process& process); // Prints process PID, Parent PID, and Status
 
 private:
 
@@ -104,7 +104,7 @@ private:
     int FindChildIndex(const Process& process, int childPID); // Find index of a child process
     bool IsDiskValid(int diskNumber); // Check if disk number is valid
     bool IsRunning(); // Check if any process is currently running
-    std::string getStatus(Process process); // Get status of a process
+    // std::string getStatus(Process process); // Get status of a process
 };
 
 #endif

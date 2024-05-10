@@ -132,7 +132,6 @@ void SimOS::SimWait() {
             ReleaseMemory(childPID);
             // Mark the zombie child as terminated
             processes_[FindProcessIndex(childPID)].status = Status::terminated;
-            // processes.erase(processes.begin() + FindProcessIndex(childPID));
             break;
         }
     }
@@ -187,7 +186,7 @@ void SimOS::TimerInterrupt() {
 void SimOS::DiskReadRequest(int diskNumber, std::string fileName) {
     // Check if CPU is idle, if so, cannot handle disk read request
     if (!IsRunning()) {
-        throw std::logic_error("No process running.");
+        throw std::logic_error("No process running. 2");
     }
 
     // Check if the disk number is valid
@@ -250,7 +249,7 @@ void SimOS::DiskJobCompleted(int diskNumber) {
 void SimOS::AccessMemoryAddress(unsigned long long address) {
     // Check if CPU is idle, if so, cannot fork
     if (!IsRunning()) {
-        throw std::logic_error("No process running.");
+        throw std::logic_error("No process running. 3");
     }
 
     // Calculate the page number based on the address and page size
@@ -266,7 +265,7 @@ void SimOS::AccessMemoryAddress(unsigned long long address) {
                     lruQueue_.push_back(*it);
                     // Remove the item from its current position
                     lruQueue_.erase(it);
-                    break;
+                    return;
                 }
             }
         }
@@ -335,7 +334,7 @@ MemoryUsage SimOS::GetMemory() {
 FileReadRequest SimOS::GetDisk(int diskNumber) {
     // Check if the disk number is valid
     if (!IsDiskValid(diskNumber)) {
-        throw std::out_of_range("Invalid disk number.");
+        throw std::out_of_range("Invalid disk number. 2");
     }
 
     // If the I/O queue of the disk is not empty
@@ -351,7 +350,7 @@ FileReadRequest SimOS::GetDisk(int diskNumber) {
 std::deque<FileReadRequest> SimOS::GetDiskQueue(int diskNumber) {
     // Check if the disk number is valid
     if (!IsDiskValid(diskNumber)) {
-        throw std::out_of_range("Invalid disk number.");
+        throw std::out_of_range("Invalid disk number. 3");
     }
 
     // Get a reference to the I/O queue of the specified disk
@@ -450,8 +449,8 @@ int SimOS::FindChildIndex(const Process& process, int childPID) {
         // Increment the index for the next child
         ++index;
     }
-    // If the child with the given PID is not found, throw an exception
-    throw std::out_of_range("Child with given PID not found in parent's children.");
+    // If the child with the given PID is not found, return -1
+    return -1;
 }
 
 bool SimOS::IsDiskValid(int diskNumber) {
