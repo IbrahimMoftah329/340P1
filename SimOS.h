@@ -16,7 +16,7 @@ Ibrahim Moftah
 // Structure representing a file read request
 struct FileReadRequest
 {
-    int  PID{0}; // Process ID
+    int PID{0}; // Process ID
     std::string fileName{""}; // Name of the file to be read
 };
 
@@ -84,16 +84,16 @@ public:
 private:
 
     // Member variables
-    const int numberOfDisks; // Number of disks in the system
-    const unsigned int pageSize; // Page size of memory
-    std::deque<Process> readyQueue; // Queue for processes ready to execute
-    std::vector<Process> processes; // Vector to store all processes in the system
-    std::vector<Disk> disks; // Vector to store disk states
-    std::vector<bool> memoryMap; // Vector to represent memory map (true if memory is occupied, false otherwise)
-    MemoryUsage memory; // Struct to represent memory usage
-    std::deque<MemoryItem> lruQueue; // Queue for least recently used memory items
-    int nextPID; // The PID of the next process to be created
-    int runningPID; // The PID of the process currently using the CPU
+    const int numberOfDisks_; // Number of disks in the system
+    const unsigned int pageSize_; // Page size of memory
+    std::deque<Process> readyQueue_; // Queue for processes ready to execute
+    std::vector<Process> processes_; // Vector to store all processes in the system
+    std::vector<Disk> disks_; // Vector to store disk states
+    std::vector<bool> memoryMap_; // Vector to represent memory map (true if memory is occupied, false otherwise)
+    MemoryUsage memory_; // Struct to represent memory usage
+    std::deque<MemoryItem> lruQueue_; // Queue for least recently used memory items
+    int nextPID_; // The PID of the next process to be created
+    int runningPID_; // The PID of the process currently using the CPU
 
     // Helper functions
     void ReleaseMemory(int PID); // Release memory occupied by a process

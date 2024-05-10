@@ -7,28 +7,27 @@ Ibrahim Moftah
 #include "SimOS.h"
 
 SimOS::SimOS(int numberOfDisks, unsigned long long amountOfRAM, unsigned int pageSize)
-    : numberOfDisks(numberOfDisks), pageSize(pageSize),
-      nextPID(1), runningPID(NO_PROCESS) {
+    : numberOfDisks_(numberOfDisks), pageSize_(pageSize),
+      nextPID_(1), runningPID_(NO_PROCESS) {
     // Initialize memory, memoryMap, and disks vectors
-    memory.resize(amountOfRAM / pageSize);
-    memoryMap.resize(amountOfRAM / pageSize, false);
-    disks.resize(numberOfDisks);
+    memoryMap_.resize(amountOfRAM / pageSize, false);
+    disks_.resize(numberOfDisks);
 }
 
 void SimOS::NewProcess() {
     // Creating a new process
-    Process newProcess{nextPID++, NO_PROCESS, (Status::ready), {}};
+    Process newProcess{nextPID_++, NO_PROCESS, (Status::ready), {}};
 
-    if (runningPID == NO_PROCESS) {
+    if (runningPID_ == NO_PROCESS) {
         // If no process is running, run the new process immediately
-        runningPID = newProcess.PID;
+        runningPID_ = newProcess.PID;
         newProcess.status = Status::running;
     } else {
         // Add the new process to the ready queue
-        readyQueue.push_back(newProcess);
+        readyQueue_.push_back(newProcess);
     }
     // Add the new process to the processes vector
-    processes.push_back(newProcess);
+    processes_.push_back(newProcess);
 }
 
 void SimOS::SimFork() {
@@ -38,16 +37,16 @@ void SimOS::SimFork() {
     }
 
     // Creating a new child process
-    Process child{nextPID++, runningPID, (Status::ready), {}};
+    Process child{nextPID_++, runningPID_, (Status::ready), {}};
 
     // Adding the new child process PID to the children vector of the currently running process(parent)
-    processes[FindProcessIndex(runningPID)].children.push_back(child.PID);
+    processes_[FindProcessIndex(runningPID_)].children.push_back(child.PID);
 
     // Add the new process to the ready queue
-    readyQueue.push_back(child);
+    readyQueue_.push_back(child);
 
     // Add the new process to the processes vector
-    processes.push_back(child);
+    processes_.push_back(child);
 }
 
 void SimOS::SimExit() {
@@ -57,30 +56,30 @@ void SimOS::SimExit() {
     }
 
     // Finding the Index of the current running process within the processes vector
-    int runningIndex = FindProcessIndex(runningPID);
+    int runningIndex = FindProcessIndex(runningPID_);
 
     // updating the process current state to terminated
-    processes[runningIndex].status = Status::terminated;
+    processes_[runningIndex].status = Status::terminated;
 
     // Removing the terminated process from the ready queue
-    removeFromDeque(FindReadyQueueIndex(runningPID));
+    removeFromDeque(FindReadyQueueIndex(runningPID_));
 
     // Terminating all children processes of the terminated process 
-    CascadeTerminate(runningPID);
+    CascadeTerminate(runningPID_);
 
     // Release memory
-    ReleaseMemory(runningPID);
+    ReleaseMemory(runningPID_);
 
     // Get references to the running process and its parent
-    Process& runningProcess = processes[runningIndex];
+    Process& runningProcess = processes_[runningIndex];
     int parentPID = runningProcess.parentPID;
-    Process& parentProcess = processes[FindProcessIndex(parentPID)];
+    Process& parentProcess = processes_[FindProcessIndex(parentPID)];
 
     // If the running process has a parent and the parent is waiting
     if (runningProcess.parentPID != NO_PROCESS && parentProcess.status == Status::waiting) {       
         bool foundWaitingChild = false;
         for (auto it = parentProcess.children.begin(); it != parentProcess.children.end(); ++it) {
-            if (processes[FindProcessIndex(*it)].status == Status::terminated) {
+            if (processes_[FindProcessIndex(*it)].status == Status::terminated) {
                 foundWaitingChild = true;
                 break;
             }
@@ -88,26 +87,26 @@ void SimOS::SimExit() {
         
         if (foundWaitingChild) {
             // Parent was waiting for a child (now zombie), add it to ready queue
-            processes[FindProcessIndex(parentPID)].status = Status::ready;
-            readyQueue.push_back(parentProcess);
+            processes_[FindProcessIndex(parentPID)].status = Status::ready;
+            readyQueue_.push_back(parentProcess);
         }
     // If the running process has a parent but the parent is not waiting
     } else if (runningProcess.parentPID != NO_PROCESS && parentProcess.status != Status::waiting) {
         // Set the running process status to zombie
-        processes[runningIndex].status = Status::zombie;
+        processes_[runningIndex].status = Status::zombie;
     }
 
     // If there are processes in the ready queue
-    if (!readyQueue.empty()) {
+    if (!readyQueue_.empty()) {
         // Set the front of the ready queue as the new running process
-        runningPID = readyQueue.front().PID;
+        runningPID_ = readyQueue_.front().PID;
         // Remove the front process from the ready queue
-        readyQueue.pop_front();          
+        readyQueue_.pop_front();          
         // Find and change the now current running process status to running
-        processes[FindProcessIndex(runningPID)].status = Status::running;
+        processes_[FindProcessIndex(runningPID_)].status = Status::running;
     } else {
         // If ready queue is empty, set runningPID to NO_PROCESS (CPU idle)
-        runningPID = NO_PROCESS;
+        runningPID_ = NO_PROCESS;
     }
 }
 
@@ -118,12 +117,12 @@ void SimOS::SimWait() {
     }
 
     // Get reference to the running process
-    Process& runningProcess = processes[FindProcessIndex(runningPID)];
+    Process& runningProcess = processes_[FindProcessIndex(runningPID_)];
 
     // Check if there are any zombie children
     bool foundZombie = false;
     for (int childPID : runningProcess.children) {
-        if (processes[FindProcessIndex(childPID)].status == Status::zombie) {
+        if (processes_[FindProcessIndex(childPID)].status == Status::zombie) {
             // Found a zombie child
             foundZombie = true;
             // Remove the zombie child from the list of children
@@ -132,7 +131,7 @@ void SimOS::SimWait() {
             // Release memory associated with the zombie child
             ReleaseMemory(childPID);
             // Mark the zombie child as terminated
-            processes[FindProcessIndex(childPID)].status = Status::terminated;
+            processes_[FindProcessIndex(childPID)].status = Status::terminated;
             // processes.erase(processes.begin() + FindProcessIndex(childPID));
             break;
         }
@@ -141,19 +140,19 @@ void SimOS::SimWait() {
     // If no zombie child was found
     if (!foundZombie) {
         // Mark the running process as waiting
-        processes[FindProcessIndex(runningPID)].status = Status::waiting;
+        processes_[FindProcessIndex(runningPID_)].status = Status::waiting;
 
         // If there are processes in the ready queue
-        if (!readyQueue.empty()) {
+        if (!readyQueue_.empty()) {
             // Set the front of the ready queue as the new running process
-            runningPID = readyQueue.front().PID;
+            runningPID_ = readyQueue_.front().PID;
             // Remove the front process from the ready queue
-            readyQueue.pop_front();          
+            readyQueue_.pop_front();          
             // Find and change the now current running process status to running
-            processes[FindProcessIndex(runningPID)].status = Status::running;
+            processes_[FindProcessIndex(runningPID_)].status = Status::running;
         } else {
             // If ready queue is empty, set runningPID to NO_PROCESS (CPU idle)
-            runningPID = NO_PROCESS;
+            runningPID_ = NO_PROCESS;
         }
     }
 
@@ -166,22 +165,22 @@ void SimOS::TimerInterrupt() {
     }
 
     // Set the status of the currently running process to ready
-    processes[FindProcessIndex(runningPID)].status = Status::ready;
+    processes_[FindProcessIndex(runningPID_)].status = Status::ready;
 
     // Add the currently running process back to the ready queue
-    readyQueue.push_back(processes[FindProcessIndex(runningPID)]);
+    readyQueue_.push_back(processes_[FindProcessIndex(runningPID_)]);
     
     // If there are processes in the ready queue
-    if (!readyQueue.empty()) {
+    if (!readyQueue_.empty()) {
         // Set the front of the ready queue as the new running process
-        runningPID = readyQueue.front().PID;
+        runningPID_ = readyQueue_.front().PID;
         // Remove the front process from the ready queue
-        readyQueue.pop_front();          
+        readyQueue_.pop_front();          
         // Find and change the now current running process status to running
-        processes[FindProcessIndex(runningPID)].status = Status::running;
+        processes_[FindProcessIndex(runningPID_)].status = Status::running;
     } else {
         // If ready queue is empty, set runningPID to NO_PROCESS (CPU idle)
-        runningPID = NO_PROCESS;
+        runningPID_ = NO_PROCESS;
     }
 }
 
@@ -197,25 +196,25 @@ void SimOS::DiskReadRequest(int diskNumber, std::string fileName) {
     }
 
     // Create a file read request object with the current process ID and file name
-    FileReadRequest request{runningPID, fileName};
+    FileReadRequest request{runningPID_, fileName};
 
     // Push the file read request into the I/O queue of the specified disk
-    disks[diskNumber].ioQueue.push_back(request);
+    disks_[diskNumber].ioQueue.push_back(request);
 
     // Set the status of the current process to waiting
-    processes[FindProcessIndex(runningPID)].status = Status::waiting;
+    processes_[FindProcessIndex(runningPID_)].status = Status::waiting;
 
     // If there are processes in the ready queue
-    if (!readyQueue.empty()) {
+    if (!readyQueue_.empty()) {
         // Set the front of the ready queue as the new running process
-        runningPID = readyQueue.front().PID;
+        runningPID_ = readyQueue_.front().PID;
         // Remove the front process from the ready queue
-        readyQueue.pop_front();          
+        readyQueue_.pop_front();          
         // Find and change the now current running process status to running
-        processes[FindProcessIndex(runningPID)].status = Status::running;
+        processes_[FindProcessIndex(runningPID_)].status = Status::running;
     } else {
         // If ready queue is empty, set runningPID to NO_PROCESS (CPU idle)
-        runningPID = NO_PROCESS;
+        runningPID_ = NO_PROCESS;
     }
 }
 
@@ -226,18 +225,25 @@ void SimOS::DiskJobCompleted(int diskNumber) {
     }
 
     // If the I/O queue of the disk is not empty
-    if (!disks[diskNumber].ioQueue.empty()) {
+    if (!disks_[diskNumber].ioQueue.empty()) {
         // Get the completed job from the front of the I/O queue
-        FileReadRequest& completedJob = disks[diskNumber].ioQueue.front();
+        FileReadRequest& completedJob = disks_[diskNumber].ioQueue.front();
 
-        // Set the status of the process associated with the completed job to ready
-        processes[FindProcessIndex(completedJob.PID)].status = Status::ready;
-
-        // Add the process back to the ready queue
-        readyQueue.push_back(processes[FindProcessIndex(completedJob.PID)]);
+        if (runningPID_ != NO_PROCESS)
+        {
+            // Set the status of the process associated with the completed job to ready
+            processes_[FindProcessIndex(completedJob.PID)].status = Status::ready;
+            // Add the process back to the ready queue
+            readyQueue_.push_back(processes_[FindProcessIndex(completedJob.PID)]);
+        } else {
+            // Set the status of the process associated with the completed job to running if there are no running process
+            processes_[FindProcessIndex(completedJob.PID)].status = Status::running;
+            // Set the completed job as the new running process
+            runningPID_ = completedJob.PID;
+        }
 
         // Remove the completed job from the I/O queue
-        disks[diskNumber].ioQueue.pop_front();
+        disks_[diskNumber].ioQueue.pop_front();
     }
 }
 
@@ -248,18 +254,18 @@ void SimOS::AccessMemoryAddress(unsigned long long address) {
     }
 
     // Calculate the page number based on the address and page size
-    unsigned long long pageNumber = address / pageSize;
+    unsigned long long pageNumber = address / pageSize_;
 
     // Page already in RAM, update "recently used" information
-    for (auto& item : memory) {
-        if (item.pageNumber == pageNumber && item.PID == runningPID) {
+    for (auto& item : memory_) {
+        if (item.pageNumber == pageNumber && item.PID == runningPID_) {
             // Iterate through the LRU queue to find and update the recently used item
-            for (auto it = lruQueue.begin(); it != lruQueue.end(); ++it) {
-                if (it->pageNumber == pageNumber && it->PID == runningPID) {
+            for (auto it = lruQueue_.begin(); it != lruQueue_.end(); ++it) {
+                if (it->pageNumber == pageNumber && it->PID == runningPID_) {
                     // Move the item to the tail of the queue (recently used)
-                    lruQueue.push_back(*it);
+                    lruQueue_.push_back(*it);
                     // Remove the item from its current position
-                    lruQueue.erase(it);
+                    lruQueue_.erase(it);
                     break;
                 }
             }
@@ -267,44 +273,44 @@ void SimOS::AccessMemoryAddress(unsigned long long address) {
     }
 
     // Page not in RAM, check for available frame
-    for (size_t i = 0; i < memoryMap.size(); ++i) {
-        if (!memoryMap[i]) {
+    for (size_t i = 0; i < memoryMap_.size(); ++i) {
+        if (!memoryMap_[i]) {
             // Mark the frame as used
-            memoryMap[i] = true;
+            memoryMap_[i] = true;
             // Create a new memory item for the page
-            MemoryItem newItem{pageNumber, i, runningPID};
+            MemoryItem newItem{pageNumber, i, runningPID_};
             // Add the new item to memory
-            memory[i] = newItem;
+            memory_.push_back(newItem);
             // Add the new item to the LRU queue
-            lruQueue.push_back(newItem);
+            lruQueue_.push_back(newItem);
             return;
         }
     }
 
     // If no available frame, evict least recently used
-    if (memory.size() == memoryMap.size()) {
+    if (memory_.size() == memoryMap_.size()) {
         // Retrieve the least recently used item from the front of the LRU queue
-        MemoryItem evicted = lruQueue.front();
-        lruQueue.pop_front();
+        MemoryItem evicted = lruQueue_.front();
+        lruQueue_.pop_front();
 
         // Create a new memory item for the page using the same frame number
-        MemoryItem newItem{pageNumber, evicted.frameNumber, runningPID};
+        MemoryItem newItem{pageNumber, evicted.frameNumber, runningPID_};
 
         // Update the memory with the new item, replacing the evicted item
-        for (auto it = memory.begin(); it != memory.end(); ++it) {
+        for (auto it = memory_.begin(); it != memory_.end(); ++it) {
             if (it->pageNumber == evicted.pageNumber && it->PID == evicted.PID) {
                 *it = newItem;
                 break;
             }
         }
         // Add the new item to the tail of the LRU queue
-        lruQueue.push_back(newItem);
+        lruQueue_.push_back(newItem);
     }
 }
 
 int SimOS::GetCPU() {
     // Return the PID of the currently running process
-    return runningPID;
+    return runningPID_;
 }
 
 std::deque<int> SimOS::GetReadyQueue() {
@@ -312,7 +318,7 @@ std::deque<int> SimOS::GetReadyQueue() {
     std::deque<int> readyPIDs;
 
     // Iterate through each process in the ready queue
-    for (const Process& process : readyQueue) {
+    for (const Process& process : readyQueue_) {
         // Push the PID of the current process into the deque
         readyPIDs.push_back(process.PID);
     }
@@ -323,7 +329,7 @@ std::deque<int> SimOS::GetReadyQueue() {
 
 MemoryUsage SimOS::GetMemory() {
     // Return the MemoryUsage vector describing all currently used frames of RAM
-    return memory;
+    return memory_;
 }
 
 FileReadRequest SimOS::GetDisk(int diskNumber) {
@@ -333,9 +339,9 @@ FileReadRequest SimOS::GetDisk(int diskNumber) {
     }
 
     // If the I/O queue of the disk is not empty
-    if (!disks[diskNumber].ioQueue.empty()) {
+    if (!disks_[diskNumber].ioQueue.empty()) {
         // Return the front file read request from the I/O queue
-        return disks[diskNumber].ioQueue.front();
+        return disks_[diskNumber].ioQueue.front();
     }
 
     // If the I/O queue is empty, return an empty FileReadRequest object
@@ -349,7 +355,7 @@ std::deque<FileReadRequest> SimOS::GetDiskQueue(int diskNumber) {
     }
 
     // Get a reference to the I/O queue of the specified disk
-    const std::deque<FileReadRequest>& ioQueue = disks[diskNumber].ioQueue;
+    const std::deque<FileReadRequest>& ioQueue = disks_[diskNumber].ioQueue;
 
     // Create a new deque to store the elements after index 0(removing index 0 being the current running File Read Request)
     std::deque<FileReadRequest> newQueue(ioQueue.begin() + 1, ioQueue.end());
@@ -358,36 +364,29 @@ std::deque<FileReadRequest> SimOS::GetDiskQueue(int diskNumber) {
     return newQueue;
 }
 
-std::vector<Process> SimOS::GetAllProcesses() {
-    // Return the processes vector containing all the processes
-    return processes;
-}
-
-void SimOS::printProcess(const Process& process) {
-    // Print the PID, Parent PID, and Status of the given process
-    std::cout << "PID: " << process.PID << ", Parent PID: " << process.parentPID << ", Status: " << getStatus(process) << std::endl;
-}
-
 void SimOS::ReleaseMemory(int PID) {
+    // Create an iterator to iterate over the memory container
+    auto it = memory_.begin();
     // Iterate through each memory item
-    for (auto& item : memory) {
+    while (it != memory_.end()) {
         // Check if the item belongs to the specified process
-        if (item.PID == PID) {
+        if (it->PID == PID) {
             // Free the frame in memory by setting the corresponding entry in memoryMap to false
-            memoryMap[item.frameNumber] = false;
-            // Clear the item's information (PID, pageNumber, and frameNumber)
-            item.PID = 0; // Set PID to zero
-            item.pageNumber = 0; // Set pageNumber to zero
-            item.frameNumber = 0; // Set frameNumber to zero
+            memoryMap_[it->frameNumber] = false;
+            // Erase the item from the memory container
+            it = memory_.erase(it);
+        } else {
+            // Move to the next item
+            ++it;
         }
     }
 }
 
 void SimOS::CascadeTerminate(int PID) {
     // Iterate through each child process of the specified PID
-    for (int child : processes[FindProcessIndex(PID)].children) {
+    for (int child : processes_[FindProcessIndex(PID)].children) {
         // Set the status of the child process to terminated
-        processes[FindProcessIndex(child)].status = Status::terminated;
+        processes_[FindProcessIndex(child)].status = Status::terminated;
 
         // Remove the child process from the ready queue if it's in it
         removeFromDeque(FindReadyQueueIndex(child));
@@ -399,25 +398,25 @@ void SimOS::CascadeTerminate(int PID) {
 
 void SimOS::removeFromDeque(int index) {
     // Check if the index is valid
-    if (index < 0 || static_cast<unsigned int>(index) >= readyQueue.size()) {
+    if (index < 0 || static_cast<unsigned int>(index) >= readyQueue_.size()) {
         // If the index is invalid, return without performing any operation
         return;
     }
 
     // Shift elements in the deque to remove the element at randomIndex
-    for (size_t i = index + 1; i < readyQueue.size(); ++i) {
-        readyQueue[i - 1] = readyQueue[i];
+    for (size_t i = index + 1; i < readyQueue_.size(); ++i) {
+        readyQueue_[i - 1] = readyQueue_[i];
     }
 
     // Remove the last element from the deque
-    readyQueue.pop_back();
+    readyQueue_.pop_back();
 }
 
 int SimOS::FindProcessIndex(int PID) {
     // Iterate through the processes vector
-    for (size_t i = 0; i < processes.size(); ++i) {
+    for (size_t i = 0; i < processes_.size(); ++i) {
         // Check if the PID of the current process matches the given PID
-        if (processes[i].PID == PID) {
+        if (processes_[i].PID == PID) {
             // If a match is found, return the index
             return static_cast<int>(i);
         }
@@ -428,9 +427,9 @@ int SimOS::FindProcessIndex(int PID) {
 
 int SimOS::FindReadyQueueIndex(int PID) {
     // Iterate through the readyQueue deque
-    for (size_t i = 0; i < readyQueue.size(); ++i) {
+    for (size_t i = 0; i < readyQueue_.size(); ++i) {
         // Check if the PID of the current process in the readyQueue matches the given PID
-        if (readyQueue[i].PID == PID) {
+        if (readyQueue_[i].PID == PID) {
             // If a match is found, return the index
             return static_cast<int>(i);
         }
@@ -457,12 +456,22 @@ int SimOS::FindChildIndex(const Process& process, int childPID) {
 
 bool SimOS::IsDiskValid(int diskNumber) {
     // Check if the disk number is within the valid range of disks
-    return diskNumber >= 0 && diskNumber < numberOfDisks;
+    return diskNumber >= 0 && diskNumber < numberOfDisks_;
 }
 
 bool SimOS::IsRunning() {
     // Check if the CPU is running a process
-    return runningPID != NO_PROCESS;
+    return runningPID_ != NO_PROCESS;
+}
+
+std::vector<Process> SimOS::GetAllProcesses() {
+    // Return the processes vector containing all the processes
+    return processes_;
+}
+
+void SimOS::printProcess(const Process& process) {
+    // Print the PID, Parent PID, and Status of the given process
+    std::cout << "PID: " << process.PID << ", Parent PID: " << process.parentPID << ", Status: " << getStatus(process) << std::endl;
 }
 
 std::string SimOS::getStatus(Process process) {
