@@ -1,7 +1,5 @@
 /*
-CSCI340 Spring 2024
-Project 1
-Ibrahim Moftah
+Author: Ibrahim Moftah
 */
 
 #include "SimOS.h"
